@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>This is the second page</h1>
+{% endblock %}
+
+{% block content %}
+    <h2>Second page content</h2>
+    <h3>Phone: {{ phone }}</h3>
+    <h3>Email: {{ email }}</h3>
+    <h3>{{ current_date }}</h3>
+{% endblock %}
