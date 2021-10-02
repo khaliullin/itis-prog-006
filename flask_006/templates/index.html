@@ -1,5 +1,18 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>Hello Flask!</h1>
+<h1>Hello Flask! This is our posts</h1>
+{% endblock %}
+
+{% block content %}
+{% for p in posts %}
+
+<a href="{{ url_for('post_content'), post_id=p.id}}">
+    <div>
+        <h3>{{ p.title }}</h3>
+        <p>{{ p.content[:30] }}</p>
+    </div>
+</a>
+<hr>
+{% endfor %}
 {% endblock %}

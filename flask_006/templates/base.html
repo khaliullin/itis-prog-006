@@ -13,16 +13,10 @@
     <h1>This is the base page</h1>
 {% endblock %}
 
-<ul>
-    {% for m in menu %}
-    <li>{{ m }}</li>
-    {% endfor %}
-</ul>
-
 <!--<a href="{{ url_for('index') }}">Главная страница</a>-->
 
-{% for url, name in menu_url.items() %}
-<a href="{{ url_for(url) }}">{{ name }}</a>
+{% for m in menu_url %}
+<a href="{{ url_for(m.url) }}">{{ m.title }}</a>
 {% endfor %}
 
 <a href="{{ url_for('profile', username='sagit')}}">User Sagit</a>
