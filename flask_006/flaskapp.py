@@ -2,7 +2,7 @@ import datetime
 import os
 import sqlite3
 
-from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, g
+from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, g, abort
 
 from flask_006.flask_database import FlaskDataBase
 
@@ -97,7 +97,9 @@ def add_post():
 @app.route('/post/<int:post_id>')
 def post_content(post_id):
     fdb = FlaskDataBase(get_db())
-    title, content = fdb.get_post_content()
+    title, content = fdb.get_post_content(post_id)
+    if not title:
+        abort(404)
     return render_template('post.html', menu_url=fdb.get_menu(), title=title, content=content)
 
 
@@ -121,6 +123,11 @@ def login():
         return render_template('login.html', menu_url=url_menu_items)
     else:
         raise Exception(f'Method {request.method} not allowed')
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return "<h1>Ooooops! This post does not exist!</h1>"
 
 
 @app.teardown_appcontext

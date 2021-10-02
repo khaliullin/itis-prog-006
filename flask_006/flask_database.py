@@ -45,3 +45,15 @@ class FlaskDataBase:
         except sqlite3.Error as e:
             print(f"Exception in getting posts list: {e}")
         return []
+
+    def get_post_content(self, post_id):
+        try:
+            self.__cur.execute(
+                f"SELECT title, content FROM posts WHERE id = {post_id}"
+            )
+            res = self.__cur.fetchone()
+            if res:
+                return res
+        except sqlite3.Error as e:
+            print(f"Exception in getting post by id {post_id}: {e}")
+        return False, False
