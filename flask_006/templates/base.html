@@ -10,7 +10,7 @@
 </head>
 <body>
 {% block header %}
-    <h1>This is the base page</h1>
+<h1>This is the base page</h1>
 {% endblock %}
 
 <!--<a href="{{ url_for('index') }}">Главная страница</a>-->
@@ -23,6 +23,13 @@
 
 {% block content %}
 {% endblock %}
+
+<script>
+    document.cookie = 'ex=1;';
+    if (!document.cookie) {
+        alert('Для этого сайта требуется включить cookies!');
+    }
+</script>
 
 </body>
 </html>

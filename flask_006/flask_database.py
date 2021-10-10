@@ -21,13 +21,19 @@ class FlaskDataBase:
             print(f"Unexpected exception {e}")
         return []
 
-    def add_post(self, title, content):
+    def add_post(self, title, content, image):
         pub_date = math.floor(time.time())
         try:
-            self.__cur.execute(
-                "INSERT INTO posts VALUES (NULL, ?, ?, ?)",
-                (title, content, pub_date)
-            )
+            if image:
+                self.__cur.execute(
+                    "INSERT INTO posts VALUES (NULL, ?, ?, ?, ?)",
+                    (title, content, image, pub_date)
+                )
+            else:
+                self.__cur.execute(
+                    "INSERT INTO posts VALUES (NULL, ?, ?, NULL, ?)",
+                    (title, content, pub_date)
+                )
             self.__db.commit()
         except sqlite3.Error as e:
             print(f"Error adding post to database: {e}")
@@ -57,3 +63,15 @@ class FlaskDataBase:
         except sqlite3.Error as e:
             print(f"Exception in getting post by id {post_id}: {e}")
         return False, False
+
+    def get_post_photo(self, post_id):
+        try:
+            self.__cur.execute(
+                f"SELECT photo FROM posts WHERE id = {post_id}"
+            )
+            res = self.__cur.fetchone()
+            if res:
+                return res[0]
+        except sqlite3.Error as e:
+            print(f"Exception in getting post photo by id {post_id}: {e}")
+        return False

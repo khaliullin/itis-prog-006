@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title text NOT NULL UNIQUE,
     content text NOT NULL,
+    photo BLOB DEFAULT NULL,
     pub_date integer NOT NULL
 );
