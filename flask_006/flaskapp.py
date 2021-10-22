@@ -4,7 +4,9 @@ import sqlite3
 
 from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, g, abort, \
     make_response, redirect, session
+from flask_sqlalchemy import SQLAlchemy
 
+from flask_006.admin.admin import admin
 from flask_006.flask_database import FlaskDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -19,6 +21,11 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flaskapp.db')))
 app.permanent_session_lifetime = datetime.timedelta(days=1)
+
+app.register_blueprint(admin, url_prefix='/admin')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flaskapp.db'
+# postgres://user:password@localhost/database_name
 
 
 def create_db():
@@ -55,12 +62,16 @@ def before_first_request_func():
 
 
 fdb = None
+db = None
+app_db = SQLAlchemy(app)
 
 
 @app.before_request
 def before_request_func():
     global fdb
-    fdb = FlaskDataBase(get_db())
+    global db
+    db = get_db()
+    fdb = FlaskDataBase(db)
     print('BEFORE REQUEST called!')
 
 
@@ -74,6 +85,13 @@ def after_request_func(response):
 def teardown_request_func(response):
     print('TEARDOWN REQUEST called!')
     return response
+
+
+@app.teardown_appcontext
+def close_db(error):
+    """Close database connection if it exists."""
+    if hasattr(g, 'link_db'):
+        g.link_db.close()
 
 
 @app.route('/')
@@ -145,10 +163,26 @@ def post_photo(post_id):
     return response
 
 
-@app.route('/ajax')
+@app.route('/ajax', methods=['GET', 'POST'])
 def ajax_example():
-    value = request.args['data']['value']
-    return value + 1
+    if request.method == 'POST':
+        number_value = request.form.get('number', 0) or 0
+        number = int(number_value)
+    else:
+        number_value = request.args.get('number', 0) or 0
+        number = int(number_value)
+    return f'{number + 1}'
+
+
+@app.route('/ajax_items', methods=['POST'])
+def ajax_items():
+    items = {
+        1: 'iPhone 13 Pro',
+        2: 'Macbook pro 16"',
+        3: 'Xiaomi airdots 2 pro ultra',
+        4: 'Dyson стайлер'
+    }
+    return items
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -176,13 +210,6 @@ def login():
 @app.errorhandler(404)
 def page_not_found(error):
     return "<h1>Ooooops! This post does not exist!</h1>"
-
-
-@app.teardown_appcontext
-def close_db(error):
-    """Close database connection if it exists."""
-    if hasattr(g, 'link_db'):
-        g.link_db.close()
 
 
 @app.route('/test_response1')
