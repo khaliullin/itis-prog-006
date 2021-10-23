@@ -4,6 +4,7 @@ import sqlite3
 
 from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, g, abort, \
     make_response, redirect, session
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 from flask_006.admin.admin import admin
@@ -11,30 +12,34 @@ from flask_006.flask_database import FlaskDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_006.helpers import check_ext
+from flask_006.models import db, User, Profile
 
-DATABASE = 'flaskapp.db'
+DATABASE = 'main.db'
 DEBUG = True
 SECRET_KEY = 'gheghgj3qhgt4q$#^#$he'
 MAX_CONTENT_LENGTH = 3 * 1024 * 1024  # 3 MB
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flaskapp.db')))
+app.config.update(dict(DATABASE=os.path.join(app.root_path, 'main.db')))
 app.permanent_session_lifetime = datetime.timedelta(days=1)
 
 app.register_blueprint(admin, url_prefix='/admin')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flaskapp.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///main.db'
 # postgres://user:password@localhost/database_name
+
+db.init_app(app)
+migrate = Migrate(app, db)
 
 
 def create_db():
     """Creates new database from sql file."""
-    db = connect_db()
+    db_raw = connect_db()
     with app.open_resource('db_schema.sql', mode='r') as f:
-        db.cursor().executescript(f.read())
-    db.commit()
-    db.close()
+        db_raw.cursor().executescript(f.read())
+    db_raw.commit()
+    db_raw.close()
 
 
 def connect_db():
@@ -62,16 +67,15 @@ def before_first_request_func():
 
 
 fdb = None
-db = None
-app_db = SQLAlchemy(app)
+db_raw = None
 
 
 @app.before_request
 def before_request_func():
     global fdb
-    global db
-    db = get_db()
-    fdb = FlaskDataBase(db)
+    global db_raw
+    db_raw = get_db()
+    fdb = FlaskDataBase(db_raw)
     print('BEFORE REQUEST called!')
 
 
@@ -96,6 +100,7 @@ def close_db(error):
 
 @app.route('/')
 def index():
+    user = User.query.first()
     return render_template(
         'index.html',
         menu_url=fdb.get_menu(),
@@ -117,6 +122,34 @@ def second():
     )
 
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == "GET":
+        return render_template('register.html')
+    else:
+        try:
+            hash = generate_password_hash(request.form['password'])
+            user = User(
+                email=request.form['email'],
+                password=hash
+            )
+            db.session.add(user)
+            db.session.flush()
+
+            profile = Profile(
+                name=request.form['name'],
+                birthdate=datetime.date.fromisoformat(request.form['birthdate']),
+                city=request.form['city'],
+                user_id=user.id
+            )
+            db.session.add(profile)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f'Exception while creating user: {e}')
+        return redirect(url_for('index'))
+
+
 # int, float, path
 @app.route('/user/<username>')
 def profile(username):
@@ -129,6 +162,7 @@ def add_post():
         name = request.form["name"]
         post_content = request.form["post"]
         file = request.files.get('file')
+        img = None
         if len(name) > 5 and len(post_content) > 10:
             if file and check_ext(file.filename):
                 try:
@@ -188,21 +222,22 @@ def ajax_items():
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'GET':
-        return render_template('login.html', menu_url=url_menu_items)
+        return render_template('login.html', menu_url=fdb.get_menu())
     elif request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         if not email:
             flash('Email не указан!', category='unfilled_error')
-        else:
-            if '@' not in email or '.' not in email:
-                flash('Некорректный email!', category='validation_error')
-        if not password:
+        elif '@' not in email or '.' not in email:
+            flash('Некорректный email!', category='validation_error')
+        elif not password:
             flash('Пароль не указан!', category='unfilled_error')
+        else:
+            if password == '12345':
+                return redirect(url_for('index'))
 
-        print(request)
         print(get_flashed_messages(True))
-        return render_template('login.html', menu_url=url_menu_items)
+        return render_template('login.html', menu_url=fdb.get_menu())
     else:
         raise Exception(f'Method {request.method} not allowed')
 
