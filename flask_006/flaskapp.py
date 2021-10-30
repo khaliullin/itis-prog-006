@@ -5,14 +5,13 @@ import sqlite3
 from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, g, abort, \
     make_response, redirect, session
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 
 from flask_006.admin.admin import admin
 from flask_006.flask_database import FlaskDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_006.helpers import check_ext
-from flask_006.models import db, User, Profile
+from flask_006.models import db, User, Profile, News
 
 DATABASE = 'main.db'
 DEBUG = True
@@ -31,6 +30,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///main.db'
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+upload_files_dir = 'uploads'
 
 
 def create_db():
@@ -328,6 +329,41 @@ def hash_example():
 
     print(check_password_hash(hash, 'Password1234'))
     return f"<h1>Hash: {hash}</h1>"
+
+
+@app.route('/news')
+def news_list():
+    news = News.query.all()
+    return render_template('news.html', menu_url=fdb.get_menu(), news=news)
+
+
+@app.route('/add_news', methods=['GET', 'POST'])
+def add_news():
+    if request.method == "POST":
+        try:
+            upload_file = request.files.get('photo')
+            # upload_files = request.files.getlist("photo")
+            file_path = None
+            if upload_file:
+                file_ext = upload_file.filename.rsplit('.', 1)[1]
+                file_path = os.path.join(
+                    upload_files_dir,
+                    f"{generate_password_hash(upload_file.filename)}.{file_ext}"
+                )
+                upload_file.save(os.path.join('static', file_path))
+            news = News(
+                title=request.form['title'],
+                content=request.form['content'],
+                photo=file_path,
+                pub_date=datetime.datetime.now()
+            )
+            db.session.add(news)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Exception while adding news: {e}")
+        return redirect(url_for('news_list'))
+    return render_template('add_news.html')
 
 
 if __name__ == '__main__':

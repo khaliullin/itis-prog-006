@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>All news</h1>
+{% endblock %}
+
+{% block content %}
+{% for n in news %}
+
+<div class="post">
+    <h3>{{ n.title }}</h3>
+    <p>{{ n.content | striptags }}</p>
+    {% if n.photo %}
+        <img src="{{ url_for('static', filename=n.photo)}}" alt="#">
+    {% else %}
+        <p>no photo</p>
+    {% endif %}
+</div>
+
+<hr>
+
+{% endfor %}
+{% endblock %}

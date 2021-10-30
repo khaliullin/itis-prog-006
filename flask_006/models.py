@@ -46,3 +46,13 @@ class Posts(db.Model):
     def __repr__(self):
         return f'post {self.id}'
 
+
+class News(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(50), nullable=False)
+    content = db.Column(db.Text)
+    photo = db.Column(db.String(256))
+    pub_date = db.Column(db.DateTime)
+
+    def __repr__(self):
+        return f'news {self.id}'
