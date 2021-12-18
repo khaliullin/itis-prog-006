@@ -1,0 +1,19 @@
+version: '3'
+services:
+    web:
+        build: .
+        ports:
+            - "8000:8000"
+        volumes:
+          - .:/app
+        restart: always
+    db:
+        image: postgres:9.6
+        restart: always
+        container_name: postgres_db_container
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: flask
+        ports:
+            - "5432:5432"
